@@ -7,83 +7,50 @@
 //
 
 import UIKit
+import RxSwift
+import RxCocoa
 
 class ShoppingCartViewController: BaseViewController {
   
-  @IBOutlet private weak var tableView: UITableView!
-  @IBOutlet private weak var totalPriceLabel: UILabel!
-  
-  var cartItems: [CartItem] = []
-  var totalPrice: Float = 0 {
-    didSet {
-      if viewIfLoaded != nil {
-        totalPriceLabel.text = CurrencyFormatter.turkishLirasFormatter.string(from: totalPrice)
-      }
+    @IBOutlet private weak var tableView: UITableView!
+    @IBOutlet private weak var totalPriceLabel: UILabel!
+    
+    // 추가한 코드 8
+    private let disposeBag = DisposeBag()
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        configureTableView()
+        
+        // Rx - Setup
+        
+        ShoppingCart.shared.getCartItems()
+            .bind(to: tableView.rx
+                .items(cellIdentifier: "cartCoffeeCell", cellType: CartCoffeeCell.self)) { row, element, cell in
+                    cell.configure(with: element)
+        }
+        .disposed(by: disposeBag)
+        
+        ShoppingCart.shared.getTotalCost()
+            .subscribe(onNext: { [weak self] totalCost in
+                self?.totalPriceLabel.text = CurrencyFormatter.turkishLirasFormatter.string(from: totalCost)
+            })
+         .disposed(by: disposeBag)
+       
+        tableView.rx
+            .modelDeleted(CartItem.self)
+            // 1 modelDeleted(_:)는 tableView의 reactive extension 메소드로 리턴 될 element를 전달하고 호출하면 메소드는 tableView에서 삭제 된 element를 Observable로 리턴
+            .subscribe(onNext: { cartItem in // 2 이 Observable 변수를 subscribe(onNext:)메소드 내부의 클로저에 전달
+                ShoppingCart.shared.removeCoffee(cartItem.coffee) // 3 모델에서 삭제 된 모델 의 coffee객체도 삭제
+            })
+            .disposed(by: disposeBag) // 4 subscribe(onNext:)메소드는 Disposable 변수를 리턴. Observer를 폐기하려면이 클래스에 이것을 추가해야함.
+  }
+    
+    private func configureTableView() {
+        tableView.tableHeaderView = UIView(frame: CGRect(x: 0, y: 0, width: 0, height: CGFloat.leastNonzeroMagnitude))
+        tableView.tableFooterView = UIView(frame: CGRect(x: 0, y: 0, width: 0, height: CGFloat.leastNonzeroMagnitude))
+        
+        tableView.rowHeight = 104
     }
-  }
-  
-  override func viewDidLoad() {
-    super.viewDidLoad()
-    
-    configureTableView()
-    loadData()
-  }
-  
-  private func loadData() {
-    cartItems = ShoppingCart.shared.getCartItems()
-    totalPrice = ShoppingCart.shared.getTotalCost()
-  }
-  
-  private func removeCartItem(at row: Int) {
-    guard row < cartItems.count else { return }
-    
-    ShoppingCart.shared.removeCoffee(cartItems[row].coffee)
-    
-    loadData()
-  }
-  
-  private func configureTableView() {
-    tableView.delegate = self
-    tableView.dataSource = self
-    tableView.tableHeaderView = UIView(frame: CGRect(x: 0, y: 0, width: 0, height: CGFloat.leastNonzeroMagnitude))
-    tableView.tableFooterView = UIView(frame: CGRect(x: 0, y: 0, width: 0, height: CGFloat.leastNonzeroMagnitude))
-  }
 }
-
-extension ShoppingCartViewController: UITableViewDelegate {
-  func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-    return 104
-  }
-  
-  func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
-    return true
-  }
-  
-  func tableView(_ tableView: UITableView, editingStyleForRowAt indexPath: IndexPath) -> UITableViewCellEditingStyle {
-    return .delete
-  }
-  
-  func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCellEditingStyle, forRowAt indexPath: IndexPath) {
-    if editingStyle == .delete {
-      removeCartItem(at: indexPath.row)
-      tableView.deleteRows(at: [indexPath], with: .fade)
-    }
-  }
-}
-
-extension ShoppingCartViewController: UITableViewDataSource {
-  func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-    return cartItems.count
-  }
-  
-  func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-    if let cell = tableView.dequeueReusableCell(withIdentifier: "cartCoffeeCell", for: indexPath) as? CartCoffeeCell {
-      cell.configure(with: cartItems[indexPath.row])
-      
-      return cell
-    }
-    
-    return UITableViewCell()
-  }
-}
-
