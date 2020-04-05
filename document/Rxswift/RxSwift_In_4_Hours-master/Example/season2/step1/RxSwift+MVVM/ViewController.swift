@@ -26,6 +26,8 @@ class 나중에생기는데이터<T> { //(나중에생기는데이터 => Observa
 class ViewController: UIViewController {
     @IBOutlet var timerLabel: UILabel!
     @IBOutlet var editView: UITextView!
+    
+    var disposeBag = DisposeBag()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -33,6 +35,7 @@ class ViewController: UIViewController {
             self?.timerLabel.text = "\(Date().timeIntervalSince1970)"
         }
     }
+    
 
     private func setVisibleWithAnimation(_ v: UIView?, _ s: Bool) {
         guard let v = v else { return }
@@ -83,17 +86,21 @@ class ViewController: UIViewController {
         setVisibleWithAnimation(activityIndicator, true)
 
         //2. Observable로 오는 데이터를 받아서 처리하는 방법
-        _ = downloadJson(MEMBER_LIST_URL)   // operator
-            .subscribeOn(ConcurrentDispatchQueueScheduler(qos: .default)) // 첫번째 쓰레드에서 동작
-            .map {json in json?.count ?? 0 }    // operator
-            .filter {cnt in cnt > 0 } // operator
-            .map { "\($0)" }    // operator
+        let jsonObsevable = downloadJson(MEMBER_LIST_URL)
+        let helloObsevable = Observable.just("hello world")
+        
+        Observable.zip(jsonObsevable, helloObsevable) { $1 + "\n" + $0! }
+//            .subscribeOn(ConcurrentDispatchQueueScheduler(qos: .default)) // 첫번째 쓰레드에서 동작
+//            .map {json in json?.count ?? 0 }    // operator
+//            .filter {cnt in cnt > 0 } // operator
+//            .map { "\($0)" }    // operator
+            
             .observeOn(MainScheduler.instance) // suger api : operator
             .subscribe(onNext: { json in
                 self.editView.text = json
                 self.setVisibleWithAnimation(self.activityIndicator, false)
             })
-                
+        .disposed(by: disposeBag)
     }
 }
 
