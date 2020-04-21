@@ -20,7 +20,7 @@ class ViewController: UITableViewController {
     }
 
     @IBAction func exJust1() {
-        Observable.just("Hello World")
+        Observable.just("Hello World") // just에 넣으면 넣은 값이 그대로 나옴
             .subscribe(onNext: { str in
                 print(str)
             })
@@ -36,7 +36,7 @@ class ViewController: UITableViewController {
     }
 
     @IBAction func exFrom1() {
-        Observable.from(["RxSwift", "In", "4", "Hours"])
+        Observable.from(["RxSwift", "In", "4", "Hours"]) //from에 어레이가 들어가면 어레이에 있는 요소들을 빼서 내려보내 줌
             .subscribe(onNext: { str in
                 print(str)
             })
@@ -45,7 +45,7 @@ class ViewController: UITableViewController {
 
     @IBAction func exMap1() {
         Observable.just("Hello")
-            .map { str in "\(str) RxSwift" }
+            .map { str in "\(str) RxSwift" } // 받은것을 변환(바꿔치기)해서 내려보내줌
             .subscribe(onNext: { str in
                 print(str)
             })
@@ -53,7 +53,7 @@ class ViewController: UITableViewController {
     }
 
     @IBAction func exMap2() {
-        Observable.from(["with", "곰튀김"])
+        Observable.from(["with", "곰튀김"]) //stream
             .map { $0.count }
             .subscribe(onNext: { str in
                 print(str)
@@ -63,7 +63,7 @@ class ViewController: UITableViewController {
 
     @IBAction func exFilter() {
         Observable.from([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-            .filter { $0 % 2 == 0 }
+            .filter { $0 % 2 == 0 } //false면 내려가지 않는다 (더이상 진행되지 않는다)
             .subscribe(onNext: { n in
                 print(n)
             })
@@ -72,13 +72,13 @@ class ViewController: UITableViewController {
 
     @IBAction func exMap3() {
         Observable.just("800x600")
-            .map { $0.replacingOccurrences(of: "x", with: "/") }
-            .map { "https://picsum.photos/\($0)/?random" }
-            .map { URL(string: $0) }
+            .map { $0.replacingOccurrences(of: "x", with: "/") } // 800/600
+            .map { "https://picsum.photos/\($0)/?random" } // https://picsum.photos/800/600/?random
+            .map { URL(string: $0) } // URL?
             .filter { $0 != nil }
-            .map { $0! }
-            .map { try Data(contentsOf: $0) }
-            .map { UIImage(data: $0) }
+            .map { $0! } //URL!
+            .map { try Data(contentsOf: $0) } // Data
+            .map { UIImage(data: $0) } // UIImage?
             .subscribe(onNext: { image in
                 self.imageView.image = image
             })
