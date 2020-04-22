@@ -20,12 +20,28 @@ class ViewController: UITableViewController {
     }
 
     @IBAction func exJust1() {
-        Observable.just("Hello World") // just에 넣으면 넣은 값이 그대로 나옴
-            .subscribe(onNext: { str in
-                print(str)
+         Observable.from(["RxSwift", "In", "4", "Hours"]) // just에 넣으면 넣은 값이 그대로 나옴
+            .subscribe(onNext: {s in
+                print("s")
             })
-            .disposed(by: disposeBag)
-    }
+        .disposed(by: disposeBag)
+        }
+//            .single()
+//            .subscribe { event in
+//                switch event {
+//                case .next(let str):
+//                    print("next: \(str)")
+//                break
+//                case .error(let err):
+//                    print("next: \(err.localizedDescription)")
+//                break
+//                case .completed:
+//                    print("complete")//stream은 error나 complete가 나면 종료
+//                    break
+//                }
+//        }
+//    .disposed(by: disposeBag)
+//    }
 
     @IBAction func exJust2() {
         Observable.just(["Hello", "World"])
@@ -79,8 +95,13 @@ class ViewController: UITableViewController {
             .map { $0! } //URL!
             .map { try Data(contentsOf: $0) } // Data
             .map { UIImage(data: $0) } // UIImage?
+            .observeOn(MainScheduler.instance)
+            .do(onNext: { image in
+                print(image?.size)
+            })
+            .subscribeOn(ConcurrentDispatchQueueScheduler(qos: .default))
             .subscribe(onNext: { image in
-                self.imageView.image = image
+                self.imageView.image = image //side effect
             })
             .disposed(by: disposeBag)
     }

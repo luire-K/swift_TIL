@@ -15,7 +15,8 @@ class ViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        bindUI()
+        bindInput()
+        bindOutput()
     }
 
     // MARK: - IBOutler
@@ -27,13 +28,53 @@ class ViewController: UIViewController {
     @IBOutlet var pwValidView: UIView!
 
     // MARK: - Bind UI
+    
+    let idInputText : BehaviorSubject<String> = BehaviorSubject(value: "")
+    let idValid : BehaviorSubject<Bool> = BehaviorSubject(value: false)
+    let pwInputText : BehaviorSubject<String> = BehaviorSubject(value: "")
+    let pwValid : BehaviorSubject<Bool> = BehaviorSubject(value: false)
 
-    private func bindUI() {
+    private func bindInput() {
         // id input +--> check valid --> bullet
         //          |
         //          +--> button enable
         //          |
         // pw input +--> check valid --> bullet
+        
+        //input :  아이디 입력, 비번입력
+        idField.rx.text.orEmpty
+            .bind(to: idInputText)
+            .disposed(by: disposeBag
+        )
+        
+       idInputText
+            .map(checkEmailValid)
+            .bind(to: idValid)
+            .disposed(by:disposeBag)
+        
+        pwField.rx.text.orEmpty
+            .bind(to: pwInputText)
+            .disposed(by: disposeBag
+        )
+        
+        pwInputText
+            .map(checkPasswordValid)
+            .bind(to: pwValid)
+            .disposed(by:disposeBag)
+        
+    }
+        
+    private func bindOutput() {
+        //output: 불릿, 로그인버튼 인에이블
+        idValid.subscribe(onNext: { b in self.idValidView.isHidden = b })
+            .disposed(by: disposeBag)
+
+        pwValid.subscribe(onNext: { b in self.idValidView.isHidden = b })
+        .disposed(by: disposeBag)
+
+        Observable.combineLatest(idValidOb, pwValidOb, resultSelector: { $0 && $1 })
+            .subscribe(onNext: { b in self.loginButton.isEnabled = b })
+            .disposed(by: disposeBag)
     }
 
     // MARK: - Logic
