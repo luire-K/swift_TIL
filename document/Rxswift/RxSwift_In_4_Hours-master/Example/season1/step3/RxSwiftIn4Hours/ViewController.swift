@@ -11,12 +11,13 @@ import RxSwift
 import UIKit
 
 class ViewController: UIViewController {
+    
+    let viewModel = ViewModel()
     var disposeBag = DisposeBag()
 
     override func viewDidLoad() {
         super.viewDidLoad()
         bindInput()
-        bindOutput()
     }
 
     // MARK: - IBOutler
@@ -41,49 +42,28 @@ class ViewController: UIViewController {
         //          |
         // pw input +--> check valid --> bullet
         
-        //input :  아이디 입력, 비번입력
+        //input 2:  아이디 입력, 비번입력
         idField.rx.text.orEmpty
-            .bind(to: idInputText)
-            .disposed(by: disposeBag
-        )
-        
-       idInputText
-            .map(checkEmailValid)
-            .bind(to: idValid)
-            .disposed(by:disposeBag)
+            .bind(to: viewModel.emailText)
+            .disposed(by: disposeBag)
         
         pwField.rx.text.orEmpty
-            .bind(to: pwInputText)
-            .disposed(by: disposeBag
-        )
-        
-        pwInputText
-            .map(checkPasswordValid)
-            .bind(to: pwValid)
-            .disposed(by:disposeBag)
-        
-    }
-        
-    private func bindOutput() {
-        //output: 불릿, 로그인버튼 인에이블
-        idValid.subscribe(onNext: { b in self.idValidView.isHidden = b })
+            .bind(to: viewModel.pwText)
             .disposed(by: disposeBag)
-
-        pwValid.subscribe(onNext: { b in self.idValidView.isHidden = b })
+        
+        //output2: 아이디 비번 체크상태
+        viewModel.isEmailValid
+            .bind(to: idValidView.rx.isHidden)
+            .disposed(by: disposeBag)
+        
+        viewModel.isPasswordValid
+        .bind(to: pwValidView.rx.isHidden)
         .disposed(by: disposeBag)
-
-        Observable.combineLatest(idValidOb, pwValidOb, resultSelector: { $0 && $1 })
-            .subscribe(onNext: { b in self.loginButton.isEnabled = b })
+        
+        //output 1: 버튼의 enable 상태
+        Observable.combineLatest(viewModel.isEmailValid, viewModel.isPasswordValid, resultSelector: { $0 && $1 })
+            .bind(to: loginButton.rx.isEnabled)
             .disposed(by: disposeBag)
-    }
-
-    // MARK: - Logic
-
-    private func checkEmailValid(_ email: String) -> Bool {
-        return email.contains("@") && email.contains(".")
-    }
-
-    private func checkPasswordValid(_ password: String) -> Bool {
-        return password.count > 5
+        
     }
 }
