@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import RxSwift
 
 class AsyncViewController: UIViewController {
     // MARK: - Field
@@ -36,6 +37,18 @@ class AsyncViewController: UIViewController {
 
     @IBAction func onLoadAsync(_ sender: Any) {
         // TODO: async
+        loadImageAsync(from: IMAGE_URL) { img in
+            DispatchQueue.main.async {
+                self.imageView.image = img
+            }
+        }
+//        loadImageAsyncRx(from: IMAGE_URL)
+//            .subscribe(onNext:{ (UIImage?, CGFloat, CGFloat) in
+//                DispatchQueue.main.async {
+//                    self.imageView.image = img
+//                }
+//
+//            })
     }
 
     private func loadImage(from imageUrl: String) -> UIImage? {
@@ -45,4 +58,20 @@ class AsyncViewController: UIViewController {
         let image = UIImage(data: data)
         return image
     }
+    
+    private loadImageAsync(from imageUrl: String, completion: @escaping (UIImage?, CGFloat, CGFloat) -> Void) {
+        DispatchQueue.global(qos: .default).async {
+            let image = self.loadImage(from: imageUrl)
+            completion(image, image?.size.width ?? 0, image?.size.height ?? 0)
+        }
+    }
+
+//    private func loadImageAsyncRx(from imageUrl: String) -> Observable<(UIImage?, Int, Int)> {
+//        return Observable.create { emitter in
+//            loadImageAsync(from: imageUrl, completion: img, width, height in
+//                emitter.onNext((img, width, height))
+//        }
+//        return Disposable.create()
+//    }
+    
 }

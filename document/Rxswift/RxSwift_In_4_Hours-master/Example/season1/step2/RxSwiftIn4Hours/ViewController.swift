@@ -85,24 +85,68 @@ class ViewController: UITableViewController {
             })
             .disposed(by: disposeBag)
     }
+    
+    private func rxImageLoader (_ src:URL) -> Observable<UIImage?> {
+        return Observable.create { emitter in
+            let task = URLSession.shared.dataTask(with: src, completionHandler: {
+                (data, response, error) in
+                
+                if error != nil {
+                    emitter.onError(error!)
+                    return
+                }
+                
+                guard let data = data else {
+                    emitter.onCompleted()
+                    return
+                }
+                
+                let image = UIImage(data: data)
+                emitter.onNext(image)
+                
+            })
+            
+            task.resume()
+            
+            return Disposables.create {
+                task.cancel()
+            }
+        }
+    }
 
     @IBAction func exMap3() {
-        Observable.just("800x600")
-            .map { $0.replacingOccurrences(of: "x", with: "/") } // 800/600
-            .map { "https://picsum.photos/\($0)/?random" } // https://picsum.photos/800/600/?random
-            .map { URL(string: $0) } // URL?
-            .filter { $0 != nil }
-            .map { $0! } //URL!
-            .map { try Data(contentsOf: $0) } // Data
-            .map { UIImage(data: $0) } // UIImage?
+        let imageUrl = "https://picsum.photos/800/600/?random"
+        
+        let ar = [1, 2]
+        ar.map { $0 * 2 }   //[2, 4]
+        ar.map { [$0 * 2, $1 * 3]  }   //[2, 3], [4, 6]
+        
+        Observable.just(imageUrl)
+            .map { URL(string: $0)! }
+            .flatMap { self.cashedImageLoading($0) }
+            .observeOn(ConcurrentDispatchQueueScheduler(qos: .default))
             .observeOn(MainScheduler.instance)
-            .do(onNext: { image in
-                print(image?.size)
-            })
-            .subscribeOn(ConcurrentDispatchQueueScheduler(qos: .default))
-            .subscribe(onNext: { image in
-                self.imageView.image = image //side effect
+            .subscribe({image in
+                self.imageView.image = image
             })
             .disposed(by: disposeBag)
+        
+//        Observable.just("800x600")
+//            .map { $0.replacingOccurrences(of: "x", with: "/") } // 800/600
+//            .map { "https://picsum.photos/\($0)/?random" } // https://picsum.photos/800/600/?random
+//            .map { URL(string: $0) } // URL?
+//            .filter { $0 != nil }
+//            .map { $0! } //URL!
+//            .map { try Data(contentsOf: $0) } // Data
+//            .map { UIImage(data: $0) } // UIImage?
+//            .observeOn(MainScheduler.instance)
+//            .do(onNext: { image in
+//                print(image?.size)
+//            })
+//            .subscribeOn(ConcurrentDispatchQueueScheduler(qos: .default))
+//            .subscribe(onNext: { image in
+//                self.imageView.image = image //side effect
+//            })
+//            .disposed(by: disposeBag)
     }
 }
