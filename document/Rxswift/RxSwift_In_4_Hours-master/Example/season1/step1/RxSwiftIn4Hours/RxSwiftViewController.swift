@@ -10,49 +10,73 @@ import RxSwift
 import UIKit
 
 class RxSwiftViewController: UIViewController {
+ 
+    // MARK: - IBAction
+    var disposeBag: DisposeBag = DisposeBag()
+    var disposeBag2: DisposeBag = DisposeBag()
+    
     // MARK: - Field
 
     var counter: Int = 0
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
-            self.counter += 1
-            self.countLabel.text = "\(self.counter)"
+        
+        Observable<Int>.create { emitter in
+            var counter: Int = 0
+            
+            let timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+            counter += 1
+            print(counter)
+            emitter.onNext(counter)
         }
+        return Disposables.create {
+            timer.invalidate()
+            }
+        }
+        .subscribe(onNext: { [weak self] i in
+            self?.countLabel.text = "\(i)"
+        })
+            .disposed(by: disposeBag2)
     }
 
     // MARK: - IBOutlet
 
     @IBOutlet var imageView: UIImageView!
     @IBOutlet var countLabel: UILabel!
-
-    // MARK: - IBAction
-    var disposeBag: DisposeBag = DisposeBag()
+    
+    var disposBag: DisposeBag = DisposeBag()
+    
+    override func viewWillDisappear(_ animated: Bool) {
+       disposBag = DisposeBag()
+    }
 
     @IBAction func onLoadImage(_ sender: Any) {
         imageView.image = nil
 
-        rxswiftLoadImage(from: LARGER_IMAGE_URL)
-            .observeOn(MainScheduler.instance)
-            .subscribe({ result in
-                switch result {
-                case let .next(image):
-                    self.imageView.image = image
+       
+        let disposable =
+            rxswiftLoadImage(from: LARGER_IMAGE_URL)
+                .observeOn(MainScheduler.instance)
+                .subscribe({ result in
+                    switch result {
+                    case let .next(image):
+                        self.imageView.image = image
 
-                case let .error(err):
-                    print(err.localizedDescription)
+                    case let .error(err):
+                        print(err.localizedDescription)
 
-                case .completed:
-                    break
-                }
-            })
-        .disposed(by: DisposeBag())
+                    case .completed:
+                        break
+                    }
+                    
+                })
+                .disposed(by: disposBag)
+        
     }
 
     @IBAction func onCancel(_ sender: Any) {
-        // TODO: cancel image loading
-        disposeBag = DisposeBag()
+        disposBag = DisposeBag()
     }
 
     // MARK: - RxSwift

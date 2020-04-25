@@ -37,7 +37,7 @@ class AsyncViewController: UIViewController {
 
     @IBAction func onLoadAsync(_ sender: Any) {
         // TODO: async
-        loadImageAsync(from: IMAGE_URL) { img in
+        loadImageAsync(from: IMAGE_URL) { img, width, height  in
             DispatchQueue.main.async {
                 self.imageView.image = img
             }
@@ -59,7 +59,7 @@ class AsyncViewController: UIViewController {
         return image
     }
     
-    private loadImageAsync(from imageUrl: String, completion: @escaping (UIImage?, CGFloat, CGFloat) -> Void) {
+    private func loadImageAsync(from imageUrl: String, completion: @escaping (UIImage?, CGFloat, CGFloat) -> Void) {
         DispatchQueue.global(qos: .default).async {
             let image = self.loadImage(from: imageUrl)
             completion(image, image?.size.width ?? 0, image?.size.height ?? 0)
